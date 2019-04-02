@@ -1,0 +1,172 @@
+task1：
+
+clear all;
+file_path = 'F:\数字图像处理作业\第6次作业\';% 图像文件夹路径 
+A=imread('lena.bmp');%读取图像
+mean=0;
+sigma=30;
+A1=imnoise(A,'gaussian', mean ,sigma^2/255^2);
+figure(1);subplot(2,2,1);imshow(A1);title('原图');
+A1=double(A1);
+
+Aa= arithmetic(A1,7);%算术均值滤波器
+Aa=uint8(Aa);
+figure(1);
+subplot(2,2,2);
+imshow(Aa);
+title('算术均值结果');
+
+Ag= geometry(A1,7);%几何均值滤波器
+Ag=uint8(Ag);
+figure(1);
+subplot(2,2,3);
+imshow(Ag);
+title('几何均值结果');
+
+
+
+Am= medfilt2(A1,[7,7]);%中值滤波器
+Am=uint8(Am);
+figure(1);
+subplot(2,2,4);
+imshow(Am);
+title('中值滤波结果');
+
+
+
+function f11=arithmetic(f,n)
+[M,N]=size(f);
+f11 = f;
+for i = 1:M-n+1
+    for j = 1:N-n+1
+        g1 = f(i:i+n-1,j:j+n-1);
+        s1 = sum(sum(g1));%中心点的值用子图像的算术均值代替
+        f11(i+(n-1)/2,j+(n-1)/2) = s1/(n*n); 
+    end
+end
+end
+ 
+function  f12=geometry(f,n)
+[M,N]=size(f);
+f21 = f + ones(M,N); %防止有个像素点为0而导致乘积为0
+f12 = f21;
+for i = 1:M-n+1
+    for j = 1:N-n+1
+        g2 = f21(i:i+n-1,j:j+n-1);
+        s2 = prod(g2(:));%中心点的值用子图像的几何均值代替
+        f12(i+(n-1)/2,j+(n-1)/2) = s2.^(1/numel(g2)); 
+    end
+end
+end
+ 
+
+task2：
+
+clear all;
+file_path = 'F:\数字图像处理作业\第6次作业\';% 图像文件夹路径 
+A=imread('lena.bmp');%读取图像
+
+A1=imnoise(A,'salt & pepper',0.1);
+figure(1);subplot(2,3,1);imshow(A1);title('原图');
+
+
+Aa= arithmetic(A1,7);%算术均值滤波器
+Aa=uint8(Aa);
+figure(1);
+subplot(2,3,2);
+imshow(Aa);
+title('算术均值结果');
+
+Ag= geometry(A1,7);%几何均值滤波器
+Ag=uint8(Ag);
+figure(1);
+subplot(2,3,3);
+imshow(Ag);
+title('几何均值结果');
+
+
+
+Am= medfilt2(A1,[7,7]);%中值滤波器
+figure(1);
+subplot(2,3,4);
+imshow(Am);
+title('中值滤波结果');
+
+
+Ac=charmean(A1, 0.5 ,3,3);%逆谐波滤波器
+subplot(2,3,5);
+imshow(Ac,[]);
+title('逆谐波均值滤波器 Q = 0.5');
+
+Ac=charmean(A1, -0.5 ,3,3);%逆谐波滤波器
+subplot(2,3,6);
+imshow(Ac,[]);
+title('逆谐波均值滤波器 Q = -0.5');
+
+
+function f11=arithmetic(f,n)
+f=double(f);
+[M,N]=size(f);
+f11 = f;
+for i = 1:M-n+1
+    for j = 1:N-n+1
+        g1 = f(i:i+n-1,j:j+n-1);
+        s1 = sum(sum(g1));%中心点的值用子图像的算术均值代替
+        f11(i+(n-1)/2,j+(n-1)/2) = s1/(n*n); 
+    end
+end
+end
+ 
+function  f12=geometry(f,n)
+f=double(f);
+[M,N]=size(f);
+f21 = f + ones(M,N); %防止有个像素点为0而导致乘积为0
+f12 = f21;
+for i = 1:M-n+1
+    for j = 1:N-n+1
+        g2 = f21(i:i+n-1,j:j+n-1);
+        s2 = prod(g2(:));%中心点的值用子图像的几何均值代替
+        f12(i+(n-1)/2,j+(n-1)/2) = s2.^(1/numel(g2)); 
+    end
+end
+end
+
+function f13=charmean(A1, Q ,m1,n1)
+A1=double(A1);
+[m,n]=size(A1);
+f = padarray(A1,[m1 n1],'replicate');      
+tf = @(A,Q) sum(A .^(Q + 1),1) ./  sum((A + eps) .^Q,1);
+g = colfilt(f,[m1 n1],'sliding',tf,Q);
+f13 = (g(m1 + 1:m + m1,n1 + 1:n + n1));
+end
+
+
+task3：
+
+clear all;
+file_path = 'F:\数字图像处理作业\第6次作业\';% 图像文件夹路径 
+A=imread('lena.bmp');%读取图像
+
+h=fspecial('motion',32,45);
+A1=imfilter(A,h,'circular','conv');
+A1=imnoise(A1,'gaussian',0,10^2/255^2);    %模糊图像
+
+n=imnoise(zeros(size(A)),'gaussian',0,10^2/255^2);     %维纳滤波
+nsr=sum(n(:).^2)/sum(im2double(A(:)).^2);              %计算信噪比
+A2=deconvwnr(A1,h,nsr);
+
+figure(1);
+subplot(1,3,1);imshow(A);title('原图');
+subplot(1,3,2);imshow(A1);title('模糊图像');
+subplot(1,3,3);imshow(A2);title('维纳滤波');
+
+
+V=0.0014;                  %最小二乘
+nPower=V*numel(A);
+[A3,LAGRA]=deconvreg(A1,h,nPower);
+
+
+figure(2);
+subplot(1,3,1);imshow(A);title('原图');
+subplot(1,3,2);imshow(A1);title('模糊图像');
+subplot(1,3,3);imshow(A3);title('最小二乘');
